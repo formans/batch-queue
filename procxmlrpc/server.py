@@ -57,7 +57,10 @@ def schedule ():
             pp = MyPP(new_task)
             running_as_root = os.getuid() == 0
             stuff = getpwnam (new_task.user)
-            uid, gid = stuff[2], stuff[3]
+            if running_as_root:
+                uid, gid = stuff[2], stuff[3]
+            else:
+                uid = gid = None
             path=new_task.env.get ('path', None)
             child_stdout_name = new_task.log_stdout or '/dev/null'
             child_stderr_name = new_task.log_stderr or '/dev/null'
@@ -68,9 +71,7 @@ def schedule ():
                         os.fchown (child_stdout.fileno(), uid, gid)
                     if child_stderr_name:
                         os.fchown (child_stderr.fileno(), uid, gid)
-                    r = reactor.spawnProcess(pp, args[0], args, {}, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
-                else:
-                    r = reactor.spawnProcess(pp, args[0], args, {}, path=path, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
+                r = reactor.spawnProcess(pp, args[0], args, {}, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
 
             new_task.pid = r.pid
             print 'started:', new_task, 'path:', path, 'uid:', uid, 'gid:', gid

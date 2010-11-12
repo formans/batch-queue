@@ -28,6 +28,7 @@ def run (cmdline):
     parser.add_argument ('--path')
     parser.add_argument ('--pidfile', default='/tmp/queue.pid')
     parser.add_argument ('--rundir')
+    parser.add_argument ('--logfile', default='queue.log')
     parser.add_argument ('args', nargs='*')
     opt = parser.parse_args(cmdline)
 
@@ -57,7 +58,7 @@ def run (cmdline):
     if opt.start:
         from twisted.scripts.twistd import run
         import sys
-        sys.argv = ['twistd', '-y', 'server.tac', '--pidfile', opt.pidfile]
+        sys.argv = ['twistd', '-y', 'server.tac', '--pidfile', opt.pidfile, '--logfile', opt.logfile]
         if opt.rundir:
             sys.argv += ['--rundir', opt.rundir]
         run()

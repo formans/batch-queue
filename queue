@@ -5,15 +5,15 @@ from procxmlrpc.task import Task
 import pwd, os
 
 #print 'path:', path, 'user:', user
-def submit (args, log_stdout, log_stderr):
+def submit (s, args, user, path, log_stdout, log_stderr):
     task_num = s.queue (args, user, {'path' : path}, log_stdout, log_stderr)
     return task_num
 
-def get_status ():
+def get_status (s):
     active_tasks, queued_tasks, stopped_tasks = cPickle.loads (s.get_tasks())
     return active_tasks, queued_tasks, stopped_tasks
 
-if __name__ == '__main__':
+def run (cmdline):
     import argparse
     #from argparse_bool import ConfigureAction
     
@@ -29,18 +29,20 @@ if __name__ == '__main__':
     parser.add_argument ('--pidfile', default='/tmp/queue.pid')
     parser.add_argument ('--rundir')
     parser.add_argument ('args', nargs='*')
-    opt = parser.parse_args()
+    opt = parser.parse_args(cmdline)
 
     s = xmlrpclib.Server('http://localhost:7080/', allow_none=True)
     path = opt.path or os.getcwd()
     user = pwd.getpwuid(os.getuid())[0]
 
+    ##print 'opt:', opt
+    
     if opt.submit:
-        task_num = submit (opt.args, opt.log_stdout, opt.log_stderr)
+        task_num = submit (s, opt.args, user, path, opt.log_stdout, opt.log_stderr)
         print 'task_num:', task_num
         
     if opt.list:
-        active_tasks, queued_tasks, stopped_tasks = get_status()
+        active_tasks, queued_tasks, stopped_tasks = get_status(s)
         print 'active:'
         for t in active_tasks:
             print t
@@ -65,3 +67,7 @@ if __name__ == '__main__':
         pid = int (open (opt.pidfile, 'r').readline())
         os.kill (pid, signal.SIGTERM)
         
+
+if __name__ == '__main__':
+    import sys
+    run (sys.argv[1:])

@@ -64,10 +64,10 @@ def run (cmdline):
         run()
 
     if opt.stop:
-        import signal
-        pid = int (open (opt.pidfile, 'r').readline())
-        os.kill (pid, signal.SIGTERM)
-        
+        ## import signal
+        ## pid = int (open (opt.pidfile, 'r').readline())
+        ## os.kill (pid, signal.SIGTERM)
+        s.terminate()
 
 if __name__ == '__main__':
     import sys

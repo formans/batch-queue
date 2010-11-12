@@ -116,6 +116,10 @@ class Spawner(xmlrpc.XMLRPC):
         schedule()
         return True
     
+    def xmlrpc_terminate (self):
+        os.kill (0, signal.SIGTERM)
+        return True
+    
     def xmlrpc_get_tasks(self):
         print 'get_tasks:', str ((active_tasks, queued_tasks, stopped_tasks))
         return cPickle.dumps ((active_tasks, queued_tasks, stopped_tasks))

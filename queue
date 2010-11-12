@@ -20,18 +20,23 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument ('--submit', '-s', action='store_true')
     parser.add_argument ('--kill', type=int)
-    parser.add_argument ('--capture-stdout')
-    parser.add_argument ('--capture-stderr')
+    parser.add_argument ('--stop', action='store_true')
+    parser.add_argument ('--start', action='store_true')
+    parser.add_argument ('--log-stdout')
+    parser.add_argument ('--log-stderr')
     parser.add_argument ('--list', '-l', action='store_true')
+    parser.add_argument ('--path')
+    parser.add_argument ('--pidfile', default='/tmp/queue.pid')
+    parser.add_argument ('--rundir')
     parser.add_argument ('args', nargs='*')
     opt = parser.parse_args()
 
     s = xmlrpclib.Server('http://localhost:7080/', allow_none=True)
-    path = os.getcwd()
+    path = opt.path or os.getcwd()
     user = pwd.getpwuid(os.getuid())[0]
 
     if opt.submit:
-        task_num = submit (opt.args, opt.capture_stdout, opt.capture_stderr)
+        task_num = submit (opt.args, opt.log_stdout, opt.log_stderr)
         print 'task_num:', task_num
         
     if opt.list:
@@ -46,3 +51,17 @@ if __name__ == '__main__':
     if opt.kill:
         import signal
         s.kill (opt.kill, signal.SIGTERM)
+
+    if opt.start:
+        from twisted.scripts.twistd import run
+        import sys
+        sys.argv = ['twistd', '-y', 'server.tac', '--pidfile', opt.pidfile]
+        if opt.rundir:
+            sys.argv += ['--rundir', opt.rundir]
+        run()
+
+    if opt.stop:
+        import signal
+        pid = int (open (opt.pidfile, 'r').readline())
+        os.kill (pid, signal.SIGTERM)
+        

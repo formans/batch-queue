@@ -56,15 +56,16 @@ def schedule ():
         else:
             args = new_task.args
             pp = MyPP(new_task)
-            ##r = reactor.spawnProcess(pp, args[0], args, {}, childFDs={0:0, 1:1, 2:2})
             stuff = getpwnam (new_task.user)
             uid, gid = stuff[2], stuff[3]
             path=new_task.env.get ('path', None)
-            child_stdout_name = new_task.log_stdout if new_task.log_stdout else '/dev/null'
-            child_stderr_name = new_task.log_stderr if new_task.log_stderr else '/dev/null'
+            child_stdout_name = new_task.log_stdout or '/dev/null'
+            child_stderr_name = new_task.log_stderr or '/dev/null'
             with open ('/dev/null', 'r') as child_stdin, open (child_stdout_name, 'w') as child_stdout, open (child_stderr_name, 'w') as child_stderr:
-                os.fchown (child_stdout.fileno(), uid, gid)
-                os.fchown (child_stderr.fileno(), uid, gid)
+                if child_stdout_name:
+                    os.fchown (child_stdout.fileno(), uid, gid)
+                if child_stderr_name:
+                    os.fchown (child_stderr.fileno(), uid, gid)
                 r = reactor.spawnProcess(pp, args[0], args, {}, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
 
             new_task.pid = r.pid

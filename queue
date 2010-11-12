@@ -1,0 +1,48 @@
+#!/usr/bin/python
+import xmlrpclib
+import cPickle
+from procxmlrpc.task import Task
+import pwd, os
+
+#print 'path:', path, 'user:', user
+def submit (args, log_stdout, log_stderr):
+    task_num = s.queue (args, user, {'path' : path}, log_stdout, log_stderr)
+    return task_num
+
+def get_status ():
+    active_tasks, queued_tasks, stopped_tasks = cPickle.loads (s.get_tasks())
+    return active_tasks, queued_tasks, stopped_tasks
+
+if __name__ == '__main__':
+    import argparse
+    #from argparse_bool import ConfigureAction
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument ('--submit', '-s', action='store_true')
+    parser.add_argument ('--kill', type=int)
+    parser.add_argument ('--capture-stdout')
+    parser.add_argument ('--capture-stderr')
+    parser.add_argument ('--list', '-l', action='store_true')
+    parser.add_argument ('args', nargs='*')
+    opt = parser.parse_args()
+
+    s = xmlrpclib.Server('http://localhost:7080/', allow_none=True)
+    path = os.getcwd()
+    user = pwd.getpwuid(os.getuid())[0]
+
+    if opt.submit:
+        task_num = submit (opt.args, opt.capture_stdout, opt.capture_stderr)
+        print 'task_num:', task_num
+        
+    if opt.list:
+        active_tasks, queued_tasks, stopped_tasks = get_status()
+        print 'active:'
+        for t in active_tasks:
+            print t
+        print 'queued:'
+        for t in queued_tasks:
+            print t
+
+    if opt.kill:
+        import signal
+        s.kill (opt.kill, signal.SIGTERM)

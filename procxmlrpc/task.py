@@ -1,0 +1,12 @@
+class Task (object):
+    def __init__ (self, args, user, num, env={}, log_stdout=None, log_stderr=None):
+        self.args = args
+        self.user = user
+        self.env = env
+        self.num = num
+        self.log_stdout = log_stdout
+        self.log_stderr = log_stderr
+        self.pid = None
+    def __repr__ (self):
+        return '%s,%s,%s' % (self.args,self.pid,self.num)
+    

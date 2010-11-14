@@ -85,6 +85,7 @@ class Spawner(xmlrpc.XMLRPC):
         self.task_num = 0
         
     def xmlrpc_queue(self, args, user, env, log_stdout, log_stderr):
+        print 'queue:', args, user, env, log_stdout, log_stderr
         queued_tasks.append (Task (args, user, self.task_num, env, log_stdout, log_stderr))
         self.task_num += 1
         schedule()
@@ -117,6 +118,7 @@ class Spawner(xmlrpc.XMLRPC):
         return True
     
     def xmlrpc_terminate (self):
+        print 'terminate'
         os.kill (0, signal.SIGTERM)
         return True
     

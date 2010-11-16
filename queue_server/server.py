@@ -80,7 +80,7 @@ def schedule ():
     busy_cores = max (active_cores, load)
     free = n_cpu - busy_cores
     print 'schedule enter:', 'active:', active_cores, 'load:', load, 'busy:', busy_cores, 'free:', free
-    if free > 1 and len(queued_tasks) != 0:
+    if free > 0.5 and len(queued_tasks) != 0:
         new_task = queued_tasks.pop(0)
         active_tasks.append(new_task)
         if new_task.pid:
@@ -99,13 +99,15 @@ def schedule ():
             child_stdout_name = new_task.log_stdout or '/dev/null'
             child_stderr_name = new_task.log_stderr or '/dev/null'
 
-            with open ('/dev/null', 'r') as child_stdin, open (child_stdout_name, 'w') as child_stdout, open (child_stderr_name, 'w') as child_stderr:
-                if running_as_root:
-                    if child_stdout_name:
-                        os.fchown (child_stdout.fileno(), uid, gid)
-                    if child_stderr_name:
-                        os.fchown (child_stderr.fileno(), uid, gid)
-                r = reactor.spawnProcess(pp, args[0], args, {}, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
+            with open ('/dev/null', 'r') as child_stdin:
+                with open (child_stdout_name, 'w') as child_stdout:
+                    with open (child_stderr_name, 'w') as child_stderr:
+                        if running_as_root:
+                            if child_stdout_name:
+                                os.fchown (child_stdout.fileno(), uid, gid)
+                            if child_stderr_name:
+                                os.fchown (child_stderr.fileno(), uid, gid)
+                        r = reactor.spawnProcess(pp, args[0], args, {}, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
 
             new_task.pid = r.pid
             print 'started:', new_task, 'path:', path, 'uid:', uid, 'gid:', gid

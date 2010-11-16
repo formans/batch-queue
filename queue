@@ -13,8 +13,6 @@ def run (cmdline):
     import argparse
     #from argparse_bool import ConfigureAction
     
-    s = xmlrpclib.Server('http://localhost:7080/', allow_none=True)
-
     def submit (args):
         ## print 'submit:', args
         path = args.path or os.getcwd()
@@ -52,6 +50,8 @@ def run (cmdline):
 
         
     parser = argparse.ArgumentParser()
+    parser.add_argument ('--host', default='localhost')
+    
     subparsers = parser.add_subparsers()
 
     parser_submit = subparsers.add_parser('submit')
@@ -83,6 +83,9 @@ def run (cmdline):
     ## parser.add_argument ('--list', '-l', action='store_true')
     ## parser.add_argument ('args', nargs='*')
     opt = parser.parse_args(cmdline)
+    s = xmlrpclib.Server('http://%s:7080/'%opt.host, allow_none=True)
+
+
     opt.func (opt)
 
     ##print 'opt:', opt

@@ -71,9 +71,16 @@ def __detect_ncpus():
 n_cpu = __detect_ncpus()
 print 'n_cpu:', n_cpu
 
+timer = None
+timer_interval = 600
 def schedule ():
-    free = n_cpu - len(active_tasks)
-    if free > 0 and len(queued_tasks) != 0:
+    global timer
+    active_cores = len (active_tasks)
+    load = os.getloadavg()[0]
+    busy_cores = max (active_cores, load)
+    free = n_cpu - busy_cores
+    print 'schedule enter:', 'active:', active_cores, 'load:', load, 'busy:', busy_cores, 'free:', free
+    if free > 1 and len(queued_tasks) != 0:
         new_task = queued_tasks.pop(0)
         active_tasks.append(new_task)
         if new_task.pid:
@@ -102,15 +109,21 @@ def schedule ():
 
             new_task.pid = r.pid
             print 'started:', new_task, 'path:', path, 'uid:', uid, 'gid:', gid
-    print 'schedule: active:', active_tasks, 'queued:', queued_tasks, 'stopped:', stopped_tasks
+    print 'schedule exit: active:', active_tasks, 'queued:', queued_tasks, 'stopped:', stopped_tasks
 
+    if len (queued_tasks) > 0:
+        if timer and timer.active():
+            timer.reset (timer_interval)
+        else:
+            timer = reactor.callLater (timer_interval, schedule)
+        
 class Spawner(xmlrpc.XMLRPC):
     """An example object to be published."""
 
     def __init__ (self):
         xmlrpc.XMLRPC.__init__ (self, allowNone=True)
         self.task_num = 0
-        
+
     def xmlrpc_queue(self, args, user, env, log_stdout, log_stderr, email):
         print 'queue:', args, user, env, log_stdout, log_stderr
         queued_tasks.append (Task (args, user, self.task_num, env, log_stdout, log_stderr, email))

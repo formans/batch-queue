@@ -3,11 +3,7 @@ import xmlrpclib
 import cPickle
 from procxmlrpc.task import Task
 import pwd, os
-
-#print 'path:', path, 'user:', user
-def submit (s, args, user, path, log_stdout, log_stderr):
-    task_num = s.queue (args, user, {'path' : path}, log_stdout, log_stderr)
-    return task_num
+import signal
 
 def get_status (s):
     active_tasks, queued_tasks, stopped_tasks = cPickle.loads (s.get_tasks())
@@ -17,32 +13,35 @@ def run (cmdline):
     import argparse
     #from argparse_bool import ConfigureAction
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument ('--submit', '-s', action='store_true')
-    parser.add_argument ('--kill', type=int)
-    parser.add_argument ('--stop', action='store_true')
-    parser.add_argument ('--start', action='store_true')
-    parser.add_argument ('--log-stdout')
-    parser.add_argument ('--log-stderr')
-    parser.add_argument ('--list', '-l', action='store_true')
-    parser.add_argument ('--path')
-    parser.add_argument ('--pidfile', default='/tmp/queue.pid')
-    parser.add_argument ('--rundir')
-    parser.add_argument ('--logfile', default='queue.log')
-    parser.add_argument ('args', nargs='*')
-    opt = parser.parse_args(cmdline)
-
     s = xmlrpclib.Server('http://localhost:7080/', allow_none=True)
-    path = opt.path or os.getcwd()
-    user = pwd.getpwuid(os.getuid())[0]
 
-    ##print 'opt:', opt
-    
-    if opt.submit:
-        task_num = submit (s, opt.args, user, path, opt.log_stdout, opt.log_stderr)
+    def submit (args):
+        ## print 'submit:', args
+        path = args.path or os.getcwd()
+        user = pwd.getpwuid(os.getuid())[0]
+        task_num = s.queue (args.args.split(), user, {'path' : path}, opt.log_stdout, opt.log_stderr, opt.email)
         print 'task_num:', task_num
         
-    if opt.list:
+    def kill (args):
+        ## print 'kill:', args
+        s.kill (args.taskno, signal.SIGTERM)
+        
+    def start (args):
+        ## print 'start:', args
+
+        from twisted.scripts.twistd import run
+        import sys
+        sys.argv = ['twistd', '-y', 'server.tac', '--pidfile', args.pidfile, '--logfile', args.logfile]
+        if args.rundir:
+            sys.argv += ['--rundir', args.rundir]
+        run()
+
+    def stop (args):
+        ## print 'stop:', args
+        s.terminate()
+
+    def _list (args):
+        ## print 'list:', args
         active_tasks, queued_tasks, stopped_tasks = get_status(s)
         print 'active:'
         for t in active_tasks:
@@ -51,23 +50,43 @@ def run (cmdline):
         for t in queued_tasks:
             print t
 
-    if opt.kill:
-        import signal
-        s.kill (opt.kill, signal.SIGTERM)
+        
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
 
-    if opt.start:
-        from twisted.scripts.twistd import run
-        import sys
-        sys.argv = ['twistd', '-y', 'server.tac', '--pidfile', opt.pidfile, '--logfile', opt.logfile]
-        if opt.rundir:
-            sys.argv += ['--rundir', opt.rundir]
-        run()
+    parser_submit = subparsers.add_parser('submit')
+    parser_submit.add_argument ('args')
+    parser_submit.add_argument ('--log-stdout')
+    parser_submit.add_argument ('--log-stderr')
+    parser_submit.add_argument ('--email')
+    parser_submit.add_argument ('--path')
+    parser_submit.set_defaults (func=submit)
+    
+    parser_stop = subparsers.add_parser ('stop')
+    parser_stop.add_argument ('stop', action='store_true')
+    parser_stop.set_defaults (func=stop)
 
-    if opt.stop:
-        ## import signal
-        ## pid = int (open (opt.pidfile, 'r').readline())
-        ## os.kill (pid, signal.SIGTERM)
-        s.terminate()
+    parser_start = subparsers.add_parser ('start')
+    parser_start.add_argument ('start', action='store_true')
+    parser_start.add_argument ('--pidfile', default='/tmp/queue.pid')
+    parser_start.add_argument ('--logfile', default='queue.log')
+    parser_start.add_argument ('--rundir')
+    parser_start.set_defaults (func=start)
+    
+    parser_kill = subparsers.add_parser ('kill')
+    parser_kill.add_argument ('taskno', type=int)
+    parser_kill.set_defaults (func=kill)
+
+    parser_list = subparsers.add_parser ('list')
+    parser_list.set_defaults (func=_list)
+    
+    ## parser.add_argument ('--list', '-l', action='store_true')
+    ## parser.add_argument ('args', nargs='*')
+    opt = parser.parse_args(cmdline)
+    opt.func (opt)
+
+    ##print 'opt:', opt
+    
 
 if __name__ == '__main__':
     import sys

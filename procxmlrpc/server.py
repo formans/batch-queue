@@ -5,7 +5,32 @@ import os, signal
 import cPickle
 from task import Task
 from pwd import getpwnam
+import smtplib  
+import ConfigParser, os
+import socket
 
+def notify (user, fromaddr, toaddrs, msg):
+    ## fromaddr = 'fromuser@gmail.com'  
+    ## toaddrs  = 'touser@gmail.com'  
+    ## msg = 'There was a terrible error that occured and I wanted you to know!'  
+
+    config = ConfigParser.SafeConfigParser()
+    config_file = os.path.expanduser('~%s/.queue.cfg'%user)
+    print 'notify: config_file:', config_file
+    config.read (config_file)
+    
+    # Credentials (if needed)  
+    username = config.get ('default', 'username')
+    password = config.get ('default', 'password')
+    server = config.get ('default', 'server')
+    port = config.getint ('default', 'port')
+    #print '%s:%d' % (server, port)
+    # The actual mail send  
+    server = smtplib.SMTP('%s:%d' % (server, port))
+    server.starttls()  
+    server.login(username,password)  
+    server.sendmail(fromaddr, toaddrs, msg)  
+    server.quit()  
 
 class MyPP(protocol.ProcessProtocol):
     def __init__ (self, task):
@@ -14,6 +39,8 @@ class MyPP(protocol.ProcessProtocol):
     ##     print "processExited, status %d" % (reason.value.exitCode,)
     def processEnded(self, reason):
         print "processEnded, task %s, status %s, exit %s, signal %s" % (self.task, reason.value.status, reason.value.exitCode, reason.value.signal)
+        if self.task.notify:
+            notify (self.task.user, self.task.user, self.task.notify, "processEnded, host %s, task %s, status %s, exit %s, signal %s" % (socket.gethostname(), self.task, reason.value.status, reason.value.exitCode, reason.value.signal))
         active_tasks.remove(self.task)
         schedule()
         
@@ -84,19 +111,25 @@ class Spawner(xmlrpc.XMLRPC):
         xmlrpc.XMLRPC.__init__ (self, allowNone=True)
         self.task_num = 0
         
-    def xmlrpc_queue(self, args, user, env, log_stdout, log_stderr):
+    def xmlrpc_queue(self, args, user, env, log_stdout, log_stderr, email):
         print 'queue:', args, user, env, log_stdout, log_stderr
-        queued_tasks.append (Task (args, user, self.task_num, env, log_stdout, log_stderr))
+        queued_tasks.append (Task (args, user, self.task_num, env, log_stdout, log_stderr, email))
         self.task_num += 1
         schedule()
         return self.task_num-1
         
     def xmlrpc_kill(self, task_num, sig):
-        task = filter (lambda t: t.num == task_num, active_tasks)
-        assert (task != [])
-        print 'kill:', task[0]
-        os.kill (task[0].pid, sig)
-        return True
+        print 'kill:', task_num, sig
+        task = filter (lambda t: t.num == task_num, queued_tasks)
+        if task:
+            queued_tasks.remove (task)
+            return True
+        else:
+            task = filter (lambda t: t.num == task_num, active_tasks)
+            if len (task) == 0:
+                raise xmlrpc.Fault (task_num, 'task not found')
+            os.kill (task[0].pid, sig)
+            return True
 
     def xmlrpc_suspend(self, task_num):
         task = filter (lambda t: t.num == task_num, active_tasks)

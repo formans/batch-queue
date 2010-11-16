@@ -1,4 +1,4 @@
-from procxmlrpc.server import Spawner
+from queue_server.server import Spawner
 
 from twisted.web import server
 from twisted.application import service, internet

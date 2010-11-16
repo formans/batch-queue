@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import xmlrpclib
 import cPickle
-from procxmlrpc.task import Task
+from queue_server.task import Task
 import pwd, os
 import signal
 
@@ -29,7 +29,9 @@ def run (cmdline):
 
         from twisted.scripts.twistd import run
         import sys
-        sys.argv = ['twistd', '-y', 'server.tac', '--pidfile', args.pidfile, '--logfile', args.logfile]
+        import distutils.sysconfig
+        python_site = distutils.sysconfig.get_python_lib()
+        sys.argv = ['twistd', '-y', '%s/queue_server/queue.tac'%python_site, '--pidfile', args.pidfile, '--logfile', args.logfile]
         if args.rundir:
             sys.argv += ['--rundir', args.rundir]
         run()

@@ -71,15 +71,11 @@ def __detect_ncpus():
 n_cpu = __detect_ncpus()
 print 'n_cpu:', n_cpu
 
-timer = None
-timer_interval = 600
 def schedule ():
-    global timer
     active_cores = len (active_tasks)
-    load = os.getloadavg()[0]
-    busy_cores = max (active_cores, load)
+    busy_cores = active_cores
     free = n_cpu - busy_cores
-    print 'schedule enter:', 'active:', active_cores, 'load:', load, 'busy:', busy_cores, 'free:', free
+    print 'schedule enter:', 'active:', active_cores, 'busy:', busy_cores, 'free:', free
     if free > 0.5 and len(queued_tasks) != 0:
         new_task = queued_tasks.pop(0)
         active_tasks.append(new_task)
@@ -113,12 +109,6 @@ def schedule ():
             print 'started:', new_task, 'path:', path, 'uid:', uid, 'gid:', gid
     print 'schedule exit: active:', active_tasks, 'queued:', queued_tasks, 'stopped:', stopped_tasks
 
-    if len (queued_tasks) > 0:
-        if timer and timer.active():
-            timer.reset (timer_interval)
-        else:
-            timer = reactor.callLater (timer_interval, schedule)
-        
 class Spawner(xmlrpc.XMLRPC):
     """An example object to be published."""
 

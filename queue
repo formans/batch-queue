@@ -22,7 +22,9 @@ def run (cmdline):
         
     def kill (args):
         ## print 'kill:', args
-        s.kill (args.taskno, signal.SIGTERM)
+        for t in args.taskno:
+            print 'kill:', t
+            s.kill (t, signal.SIGTERM)
         
     def start (args):
         ## print 'start:', args
@@ -76,7 +78,7 @@ def run (cmdline):
     parser_start.set_defaults (func=start)
     
     parser_kill = subparsers.add_parser ('kill')
-    parser_kill.add_argument ('taskno', type=int)
+    parser_kill.add_argument ('taskno', type=int, nargs='+')
     parser_kill.set_defaults (func=kill)
 
     parser_list = subparsers.add_parser ('list')

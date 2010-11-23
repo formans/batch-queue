@@ -103,7 +103,7 @@ def schedule ():
                                 os.fchown (child_stdout.fileno(), uid, gid)
                             if child_stderr_name:
                                 os.fchown (child_stderr.fileno(), uid, gid)
-                        r = reactor.spawnProcess(pp, args[0], args, {}, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
+                        r = reactor.spawnProcess(pp, args[0], args, env=None, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
 
             new_task.pid = r.pid
             print 'started:', new_task, 'path:', path, 'uid:', uid, 'gid:', gid

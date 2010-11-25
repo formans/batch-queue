@@ -17,7 +17,8 @@ def run (cmdline):
         ##print 'submit:', args
         path = args.path or os.getcwd()
         user = pwd.getpwuid(os.getuid())[0]
-        task_num = s.queue (args.args, user, {'path' : path}, args.log_stdout, args.log_stderr, args.email)
+        env = cPickle.dumps (os.environ)
+        task_num = s.queue (args.args, user, env, args.log_stdout, args.log_stderr, args.email)
         print 'task_num:', task_num
         
     def kill (args):

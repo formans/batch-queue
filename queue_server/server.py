@@ -91,7 +91,7 @@ def schedule ():
                 uid, gid = stuff[2], stuff[3]
             else:
                 uid = gid = None
-            path=new_task.env.get ('path', None)
+            path=new_task.env.get ('PATH', None)
             child_stdout_name = new_task.log_stdout or '/dev/null'
             child_stderr_name = new_task.log_stderr or '/dev/null'
 
@@ -103,7 +103,8 @@ def schedule ():
                                 os.fchown (child_stdout.fileno(), uid, gid)
                             if child_stderr_name:
                                 os.fchown (child_stderr.fileno(), uid, gid)
-                        r = reactor.spawnProcess(pp, args[0], args, env=None, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
+                        print 'env:', new_task.env
+                        r = reactor.spawnProcess(pp, args[0], args, env=new_task.env, path=path, uid=uid, gid=gid, childFDs={0:child_stdin.fileno(), 1:child_stdout.fileno(), 2:child_stderr.fileno()})
 
             new_task.pid = r.pid
             print 'started:', new_task, 'path:', path, 'uid:', uid, 'gid:', gid
@@ -117,6 +118,7 @@ class Spawner(xmlrpc.XMLRPC):
         self.task_num = 0
 
     def xmlrpc_queue(self, args, user, env, log_stdout, log_stderr, email):
+        env = cPickle.loads (env)
         print 'queue:', args, user, env, log_stdout, log_stderr
         queued_tasks.append (Task (args, user, self.task_num, env, log_stdout, log_stderr, email))
         self.task_num += 1

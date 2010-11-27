@@ -18,7 +18,7 @@ def run (cmdline):
         path = args.path or os.getcwd()
         user = pwd.getpwuid(os.getuid())[0]
         env = cPickle.dumps (os.environ)
-        task_num = s.queue (args.args, user, env, args.log_stdout, args.log_stderr, args.email)
+        task_num = s.queue (args.args, user, path, env, args.log_stdout, args.log_stderr, args.email)
         print 'task_num:', task_num
         
     def kill (args):

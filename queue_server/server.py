@@ -91,7 +91,7 @@ def schedule ():
                 uid, gid = stuff[2], stuff[3]
             else:
                 uid = gid = None
-            path=new_task.env.get ('PATH', None)
+            path=new_task.path
             child_stdout_name = new_task.log_stdout or '/dev/null'
             child_stderr_name = new_task.log_stderr or '/dev/null'
 
@@ -117,10 +117,10 @@ class Spawner(xmlrpc.XMLRPC):
         xmlrpc.XMLRPC.__init__ (self, allowNone=True)
         self.task_num = 0
 
-    def xmlrpc_queue(self, args, user, env, log_stdout, log_stderr, email):
+    def xmlrpc_queue(self, args, user, path, env, log_stdout, log_stderr, email):
         env = cPickle.loads (env)
         print 'queue:', args, user, env, log_stdout, log_stderr
-        queued_tasks.append (Task (args, user, self.task_num, env, log_stdout, log_stderr, email))
+        queued_tasks.append (Task (args, user, self.task_num, path, env, log_stdout, log_stderr, email))
         self.task_num += 1
         schedule()
         return self.task_num-1

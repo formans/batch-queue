@@ -17,7 +17,14 @@ def run (cmdline):
         ##print 'submit:', args
         path = args.path or os.getcwd()
         user = pwd.getpwuid(os.getuid())[0]
-        env = cPickle.dumps (os.environ)
+        if args.keep_environment:
+            if args.keep_environment == 'all':
+                env = cPickle.dumps (os.environ)
+            else:
+                vals = args.keep_environment.split(',')
+                env = cPickle.dumps ({ v : os.environ[v] for v in vals })
+        else:
+            env = cPickle.dumps ({})
         task_num = s.queue (args.args, user, path, env, args.log_stdout, args.log_stderr, args.email)
         print 'task_num:', task_num
         
@@ -65,6 +72,7 @@ def run (cmdline):
     parser_submit.add_argument ('--log-stderr')
     parser_submit.add_argument ('--email')
     parser_submit.add_argument ('--path')
+    parser_submit.add_argument ('--keep-environment', nargs='?', const='all')
     parser_submit.set_defaults (func=submit)
     
     parser_stop = subparsers.add_parser ('stop')

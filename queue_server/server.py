@@ -129,7 +129,7 @@ class Spawner(xmlrpc.XMLRPC):
         print 'kill:', task_num, sig
         task = filter (lambda t: t.num == task_num, queued_tasks)
         if task:
-            queued_tasks.remove (task)
+            queued_tasks.remove (task[0])
             return True
         else:
             task = filter (lambda t: t.num == task_num, active_tasks)

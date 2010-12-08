@@ -53,10 +53,10 @@ def run (cmdline):
     def _list (args):
         ## print 'list:', args
         active_tasks, queued_tasks, stopped_tasks = get_status(s)
-        print 'active:'
+        print 'active:', len(active_tasks)
         for t in active_tasks:
             print t
-        print 'queued:'
+        print 'queued:', len(queued_tasks)
         for t in queued_tasks:
             print t
 
